@@ -1,218 +1,248 @@
 <!DOCTYPE html>
 <html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Siebente Vorlesung: Ein kleines Spiel...</title>
+    <script src="three.min.js"></script>
+  </head>
 
-<head>
-  <meta charset="utf-8">
-  <title>Siebente Vorlesung: Ein kleines Spiel...</title>
-  <script src="three.min.js"></script>
-</head>
+  <body>
+    <button
+      onclick="onStart()"
+      type="button"
+      id="start"
+      style="
+        position: absolute;
+        display: block;
+        z-index: 99;
+        left: 50%;
+        top: 50%;
+        height: 90px;
+        width: 120px;
+        background-color: aqua;
+        border-style: hidden;
+      "
+    >
+      Spiel starten!
+    </button>
+    <h3>
+      Ausgangslage: Der Avatar kann mit w,a,s,d entlang der Koordinatenachsen
+      bewegt, mit j/l gedreht und mit i/k vor- und rückwärts bewegt werden.
+    </h3>
 
-<body>
-  <h2>Siebente Vorlesung: Ein kleines Spiel...</h2>
-  <h3>Ausgangslage: Der Avatar kann mit w,a,s,d entlang der Koordinatenachsen bewegt, mit j/l gedreht und mit i/k vor- und rückwärts bewegt werden.</h3>
+    <div id="myCanvas"></div>
+  </body>
 
-	
-	<div id="myCanvas"> </div>
+  <script>
+    // Hier ist die Szenerie, in der sich alles abspielt:
 
+    var scene = new THREE.Scene();
 
-</body>
+    scene.background = new THREE.Color(0x58d1d5);
 
+    // Hier steht die Kamera:
+    var aspect_ratio = window.innerWidth / window.innerHeight;
 
-<script>
-  	// Hier ist die Szenerie, in der sich alles abspielt:
-    
-  	var scene = new THREE.Scene();
-    
-    scene.background = new THREE.Color( 0x58d1d5 );
+    var camera = new THREE.PerspectiveCamera(75, aspect_ratio, 1, 10000);
 
-  	// Hier steht die Kamera:
-  	var aspect_ratio = window.innerWidth / window.innerHeight;
-  
-  	var camera = new THREE.PerspectiveCamera(75, aspect_ratio, 1, 10000);
-
-  	//camera.position.z = 500
+    //camera.position.z = 500
     //camera.position.set(0,0,500);
-  	//scene.add(camera);
+    //scene.add(camera);
 
-  	// Hier ist der Stift, der in die Szenerie malt:
-  	var renderer = new THREE.WebGLRenderer();
-  	renderer.setSize(window.innerWidth, window.innerHeight);
+    // Hier ist der Stift, der in die Szenerie malt:
+    var renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
     //renderer.setClearColorHex( 0xffffff, 1 );
     //renderer.setClearColor( 0x000000, 0 );
-  	document.getElementById('myCanvas').
-  	appendChild(renderer.domElement);
+    document.getElementById('myCanvas').appendChild(renderer.domElement);
 
-// ******** Ab hier geben wir unser Projekt ein ********
-//  Threejs Dokumentation zu 3D Objekten:
-//	https://threejs.org/docs/#api/en/core/Object3D
+    // ******** Ab hier geben wir unser Projekt ein ********
+    //  Threejs Dokumentation zu 3D Objekten:
+    //	https://threejs.org/docs/#api/en/core/Object3D
 
+    const zAxis = new THREE.Vector3(0, 0, 1);
+    const yAxis = new THREE.Vector3(0, 1, 0);
+    const xAxis = new THREE.Vector3(1, 0, 0);
 
-	const zAxis = new THREE.Vector3(0,0,1);
-	const yAxis = new THREE.Vector3(0,1,0);
-	const xAxis = new THREE.Vector3(1,0,0);
+    const bellySize = 100;
+    const handAngle = 30;
+    const footAngle = -40;
 
+    var step = 0.1 * bellySize;
+    var rotstep = (4 * 2 * Math.PI) / 360;
 
-  const bellySize = 100;
-  const handAngle = 30;
-  const footAngle = -40;
+    var headSize = bellySize * 0.5;
+    var footSize = bellySize * 0.3;
+    var handSize = bellySize * 0.2;
 
-  var step = 0.1 * bellySize;
-  var rotstep = 4 * 2 * Math.PI / 360;
+    var shapeHead = new THREE.SphereGeometry(headSize, 20, 15);
+    var shapeBelly = new THREE.SphereGeometry(bellySize, 20, 15);
+    var shapeHands = new THREE.SphereGeometry(handSize, 20, 15);
+    var shapeFeet = new THREE.SphereGeometry(footSize, 20, 15);
+    // 2. Argument: Anzahl Segmente um den Äquator der Kugel herum;
+    // 3. Argument: Anzahl Segmente vom Süd- zum Nordpol der Kugel;
+    var cover = new THREE.MeshNormalMaterial();
 
-  var headSize = bellySize * 0.5;
-  var footSize = bellySize * 0.3;
-  var handSize = bellySize * 0.2;
+    // Bauch
+    var belly = new THREE.Mesh(shapeBelly, cover);
+    belly.position.set(0, 0, 0);
+    scene.add(belly);
 
-	var shapeHead = new THREE.SphereGeometry(headSize, 20, 15); 
-	var shapeBelly = new THREE.SphereGeometry(bellySize, 20, 15); 
-	var shapeHands = new THREE.SphereGeometry(handSize, 20, 15); 
-	var shapeFeet = new THREE.SphereGeometry(footSize, 20, 15); 
-	// 2. Argument: Anzahl Segmente um den Äquator der Kugel herum; 
-	// 3. Argument: Anzahl Segmente vom Süd- zum Nordpol der Kugel;
-	var cover = new THREE.MeshNormalMaterial();
+    // Kopf
+    var head = new THREE.Mesh(shapeHead, cover);
+    head.position.set(0, bellySize + headSize, 0);
+    belly.add(head);
 
+    // Hände
+    var hand1 = new THREE.Mesh(shapeHands, cover);
 
-  // Bauch
-	var belly = new THREE.Mesh(shapeBelly, cover);
-  belly.position.set(0,0,0);
-	scene.add(belly);
+    // Erzeuge den Vektor mit der richtigen Länge auf der x-Achse
+    // https://threejs.org/docs/#api/en/math/Vector3
+    var h1pos = new THREE.Vector3(bellySize + handSize, 0, 0);
+    // Drehe den Vektor auf die richtige Position
 
-	// Kopf
-	var head = new THREE.Mesh(shapeHead, cover);
-  head.position.set(0, bellySize + headSize,0);
-	belly.add(head);
+    h1pos.applyAxisAngle(zAxis, ((2 * Math.PI) / 360) * (180 - handAngle));
+    hand1.position.copy(h1pos);
 
-	// Hände
-	var hand1 = new THREE.Mesh(shapeHands, cover);
+    belly.add(hand1);
 
-	// Erzeuge den Vektor mit der richtigen Länge auf der x-Achse
-	// https://threejs.org/docs/#api/en/math/Vector3
-	var h1pos = new THREE.Vector3(bellySize + handSize,0,0);
-	// Drehe den Vektor auf die richtige Position
+    var hand2 = new THREE.Mesh(shapeHands, cover);
+    var h2pos = new THREE.Vector3(bellySize + handSize, 0, 0);
+    var rotMat2 = new THREE.Matrix3();
+    rotMat2.makeRotation(((2 * Math.PI) / 360) * handAngle);
+    h2pos.applyMatrix3(rotMat2);
+    hand2.position.copy(h2pos);
+    belly.add(hand2);
 
-	h1pos.applyAxisAngle(zAxis,  2 * Math.PI / 360 * (180 - handAngle))
-	hand1.position.copy(h1pos);
+    //Fuesse
+    var foot1 = new THREE.Mesh(shapeFeet, cover);
+    var f1pos = new THREE.Vector3(bellySize + footSize, 0, 0);
+    // Matrix erzeugen
+    var rotMatF1 = new THREE.Matrix3();
+    // Eine Drehmatrix bauen, wie in der TheorieVL
+    rotMatF1.makeRotation(((2 * Math.PI) / 360) * (180 - footAngle));
+    // Vektor mit der Drehmatrix multiplizieren
+    f1pos.applyMatrix3(rotMatF1);
+    // Vektor in die neue Position kopieren
+    foot1.position.copy(f1pos);
+    belly.add(foot1);
 
-	belly.add(hand1);
+    var foot2 = new THREE.Mesh(shapeFeet, cover);
+    var f2pos = new THREE.Vector3(bellySize + footSize, 0, 0);
+    // Matrix erzeugen
+    var rotMatF2 = new THREE.Matrix3();
+    // Eine Drehmatrix bauen, wie in der TheorieVL
+    rotMatF2.makeRotation(((2 * Math.PI) / 360) * (360 + footAngle));
+    // Vektor mit der Drehmatrix multiplizieren
+    f2pos.applyMatrix3(rotMatF2);
+    // Vektor in die neue Position kopieren
+    foot2.position.copy(f2pos);
+    belly.add(foot2);
 
-	var hand2 = new THREE.Mesh(shapeHands, cover);
-	var h2pos = new THREE.Vector3(bellySize + handSize,0,0);
-	var rotMat2 = new THREE.Matrix3();
-	rotMat2.makeRotation(2 * Math.PI / 360 * handAngle);
-	h2pos.applyMatrix3(rotMat2);
-  hand2.position.copy(h2pos);
-	belly.add(hand2);
+    // Kamera
+    //camera.position.z = 500
+    camera.position.set(0, 0, 200);
+    head.add(camera);
 
-	//Fuesse
-	var foot1 = new THREE.Mesh(shapeFeet, cover);
-	var f1pos = new THREE.Vector3(bellySize + footSize,0,0);
-	// Matrix erzeugen
-	var rotMatF1 = new THREE.Matrix3();
-	// Eine Drehmatrix bauen, wie in der TheorieVL
-	rotMatF1.makeRotation(2 * Math.PI / 360 * (180 - footAngle));
-	// Vektor mit der Drehmatrix multiplizieren
-	f1pos.applyMatrix3(rotMatF1);
-	// Vektor in die neue Position kopieren
-  foot1.position.copy(f1pos);
-	belly.add(foot1);
+    // Bäume
+    const treeNum = 100;
+    var trees = new Array(treeNum);
 
-	var foot2 = new THREE.Mesh(shapeFeet, cover);
-	var f2pos = new THREE.Vector3(bellySize + footSize,0,0);
-	// Matrix erzeugen
-	var rotMatF2 = new THREE.Matrix3();
-	// Eine Drehmatrix bauen, wie in der TheorieVL
-	rotMatF2.makeRotation(2 * Math.PI / 360 * (360 + footAngle));
-	// Vektor mit der Drehmatrix multiplizieren
-	f2pos.applyMatrix3(rotMatF2);
-	// Vektor in die neue Position kopieren
-  foot2.position.copy(f2pos);
-	belly.add(foot2);
-
-	// Kamera
-  //camera.position.z = 500
-  camera.position.set(0,0,200);
- 	head.add(camera);	
-
-
-	// Bäume
-	const treeNum = 20;
-	var trees = new Array(treeNum);
-	
-	// Allee
-	for (let i = 0; i < treeNum; i+=2)
-	{
-		trees[i] = makeTreeAt(500,-100 * i);
-		trees[i + 1] = makeTreeAt(-500,-100 * i);
-	}
-	
-	/*
-	// Zufällig
-	for (let i = 0; i < treeNum; i+=2)
-	{
-		trees[i] = makeTreeAt(Math.random() * 2500,-Math.random() * 2500);
-		trees[i + 1] = makeTreeAt(-Math.random() * 2500,-Math.random() * 2500);
-	}
-	*/
-
-	for (let i = 0; i < treeNum; i++)
-	{
-		scene.add(trees[i]);
-	}
-
-
-// Szene darstellen
-
-	renderer.render(scene, camera);
-
-	document.addEventListener('keydown', function(event)
-  {
-  	var code = event.keyCode;
-    //alert("Eingabe: " + code);
-    //if (code == 65) belly.position.x = belly.position.x - step;
-    var tmpVec = new THREE.Vector3();
-    if (code == 65) belly.position.x -= step;
-    if (code == 87) belly.position.y += step;
-    if (code == 83) belly.position.y -= step;
-    if (code == 68) belly.position.x += step;
-    if (code == 74) belly.rotateY(rotstep);
-    if (code == 76) belly.rotateY(-rotstep);
-    if (code == 73)
-    {
-    	belly.getWorldDirection(tmpVec);
-    	belly.position.add(tmpVec.multiplyScalar(-step));
-		}
-		if (code == 75)
-    {
-    	belly.getWorldDirection(tmpVec);
-    	belly.position.add(tmpVec.multiplyScalar(step));
-		}
-    if (code == 82) 
-    {
-    	belly.position.set(0,0,0);
-    	belly.rotation.set(0,0,0);
-    	//belly.setRotationFromAxisAngle(yAxis,0);
+    // Allee
+    for (let i = 0; i < treeNum; i += 2) {
+      trees[i] = makeTreeAt(500, -100 * i);
+      trees[i + 1] = makeTreeAt(-500, -100 * i);
     }
-    renderer.render(scene, camera);
-  })
 
-	function makeTreeAt(x,z) {
-		var trunkBase = -75;
-		var topPosition = 175;
-		var trunk = new THREE.Mesh(
-											new THREE.CylinderGeometry(50,50,200),
-											new THREE.MeshBasicMaterial({color:'sienna'})
-											);
-		var top = new THREE.Mesh(
-											new THREE.SphereGeometry(150),
-											new THREE.MeshBasicMaterial({color:'forestgreen'})
-											);
-		top.position.y = topPosition;
-		trunk.add(top);
-		trunk.position.set(x, trunkBase, z);
+    /*
+      // Zufällig
+      for (let i = 0; i < treeNum; i+=2)
+      {
+      	trees[i] = makeTreeAt(Math.random() * 2500,-Math.random() * 2500);
+      	trees[i + 1] = makeTreeAt(-Math.random() * 2500,-Math.random() * 2500);
+      }
+      */
 
-		return trunk;
-	}
+    for (let i = 0; i < treeNum; i++) {
+      scene.add(trees[i]);
+    }
 
-</script>
+    function removeElem(id) {
+      var elem = document.getElementById(id);
+      elem.parentNode.removeChild(elem);
+    }
+    // Szene darstellen
+    function onStart() {
+      renderer.render(scene, camera);
+      removeElem('start');
+      startLoop();
+    }
 
+    var map = {};
+    onkeydown = onkeyup = function (e) {
+      e = e || event; // to deal with IE
+      map[e.keyCode] = e.type == 'keydown';
+      /* insert conditional here */
+    };
+
+    const clock = new THREE.Clock();
+    //var rotstep = (4 * 2 * Math.PI) / 360;
+
+    var bool = false;
+    function wait(ms) {
+      return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    async function startLoop() {
+      while (true) {
+        await pressed();
+      }
+    }
+    async function pressed() {
+      //alert("Eingabe: " + code);
+      //if (code == 65) belly.position.x = belly.position.x - step;
+      var tmpVec = new THREE.Vector3();
+      if (map[65]) belly.position.x -= step;
+      if (map[87]) belly.position.y += step;
+      if (map[83]) belly.position.y -= step;
+      if (map[68]) belly.position.x += step;
+      if (map[74]) belly.rotateY(rotstep);
+      if (map[76]) belly.rotateY(-rotstep);
+      if (map[73]) {
+        belly.getWorldDirection(tmpVec);
+        belly.position.add(tmpVec.multiplyScalar(-step * 1.5));
+      }
+      if (map[75]) {
+        belly.getWorldDirection(tmpVec);
+        belly.position.add(tmpVec.multiplyScalar(step * 1.5));
+      }
+      if (map[82]) {
+        belly.position.set(0, 0, 0);
+        belly.rotation.set(0, 0, 0);
+        //belly.setRotationFromAxisAngle(yAxis,0);
+      }
+      renderer.render(scene, camera);
+      await wait(20);
+    }
+
+    function makeTreeAt(x, z) {
+      var colorArr = [0xffffff, 0xfa8791, 0xfefa12];
+      var currentcolor = colorArr[Math.floor(Math.random() * 3)];
+      var trunkBase = -75;
+      var topPosition = 175;
+      var trunk = new THREE.Mesh(
+        new THREE.CylinderGeometry(50, 50, 200),
+        new THREE.MeshBasicMaterial({ color: 'sienna' })
+      );
+      var top = new THREE.Mesh(
+        new THREE.SphereGeometry(150),
+        new THREE.MeshBasicMaterial({ color: currentcolor })
+      );
+      top.position.y = topPosition;
+      trunk.add(top);
+      trunk.position.set(x, trunkBase, z);
+
+      return trunk;
+    }
+  </script>
 </html>
