@@ -25,6 +25,24 @@
     >
       Spiel starten!
     </button>
+    <!-- <button
+      onclick="onEnd()"
+      type="button"
+      id="start"
+      style="
+        position: absolute;
+        display: block;
+        z-index: 99;
+        left: 20%;
+        top: 20%;
+        height: 90px;
+        width: 120px;
+        background-color: aqua;
+        border-style: hidden;
+      "
+    >
+      Spiel beenden -->
+    </button>
     <h3>
       Ausgangslage: Der Avatar kann mit w,a,s,d entlang der Koordinatenachsen
       bewegt, mit j/l gedreht und mit i/k vor- und rückwärts bewegt werden.
@@ -172,11 +190,22 @@
       var elem = document.getElementById(id);
       elem.parentNode.removeChild(elem);
     }
-    // Szene darstellen
+    const buttonStart = document.getElementById('start');
+    const parentButtonStart = buttonStart.parentNode;
+
     function onStart() {
       renderer.render(scene, camera);
-      removeElem('start');
+      parentButtonStart.removeChild(buttonStart);
       gameLoop();
+    }
+
+    const canvas = document.getElementById('myCanvas');
+    const parentCanvas = buttonStart.parentNode;
+
+    function onEnd() {
+      end = true;
+      parentButtonStart.appendChild(buttonStart);
+      parentCanvas.removeChild(canvas); // TODO
     }
 
     var map = {};
@@ -212,7 +241,7 @@
       await wait(20);
     }
 
-    var meter = 10;
+    var meter = 5;
     const g_pluto = 0.62 * meter;
     const g_mond = 1.62 * meter;
     const g_mars = 3.71 * meter;
@@ -224,6 +253,7 @@
     var Hoehe = 3 * meter;
 
     const speedarr = [];
+
     async function fall() {
       const t = clock.getElapsedTime();
       console.log(0);
@@ -236,29 +266,31 @@
         boxarr[i].setFromObject(ballarr[i]);
         //if (counter % 2 == 0) renderer.render(scene, camera);
         renderer.render(scene, camera);
+        boxbelly.setFromObject(belly);
       }
     }
     const starttimes = [];
     var lasttime = 0;
+    const startingspeed = 1;
     async function generateBoxes() {
-      if (clock.getElapsedTime() < lasttime + 5) {
+      if (clock.getElapsedTime() < lasttime + 2) {
         return;
       }
-      lasttime++;
+      lasttime += 2;
       const shape = new THREE.BoxGeometry(100, 100, 100);
       const cover = new THREE.MeshNormalMaterial();
 
       // Random position within a range
-      const posX = Math.random() * 200 - 100; // Adjust the range as needed
-      const posY = Math.random() * 200 + 300; // Adjust the range as needed
-      const posZ = Math.random() * 200; // Adjust the range as needed
+      const posX = Math.random() * 200; // Adjust the range as needed
+      const posY = Math.random() * 200 + 500; // Adjust the range as needed
+      const posZ = Math.random() * 200 - 400 + belly.position.z; // Adjust the range as needed
 
       const ball = new THREE.Mesh(shape, cover);
       const box = new THREE.Box3().setFromObject(ball);
 
       ball.position.set(posX, posY, posZ);
       scene.add(ball);
-      speedarr.push(0);
+      speedarr.push(startingspeed);
       starttimes.push(clock.getElapsedTime());
       ballarr.push(ball);
       boxarr.push(box);
@@ -275,7 +307,7 @@
         }
       }
     }
-
+    var end = false;
     async function gameLoop() {
       clock.start();
       while (true) {
@@ -284,6 +316,7 @@
         detectCollisions();
         fall();
         await clearground();
+        if (end) break;
       }
     }
     async function pressed() {
