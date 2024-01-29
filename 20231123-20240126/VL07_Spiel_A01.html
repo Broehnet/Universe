@@ -25,10 +25,10 @@
     >
       Spiel starten!
     </button>
-    <!-- <button
-      onclick="onEnd()"
+    <button
+      onclick="again()"
       type="button"
-      id="start"
+      id="again"
       style="
         position: absolute;
         display: block;
@@ -41,8 +41,17 @@
         border-style: hidden;
       "
     >
-      Spiel beenden -->
+      Erneut spielen
     </button>
+    <p id="zeit" style="z-index: 99;
+      position: absolute;
+        left: 30%;
+        top: 30%;">Zeit</p>
+    <p id="gewonnen" style="z-index: 99;
+    position: absolute;
+      left: 50%;
+      font-size: 30px;
+      top: 30%;">GEWONNEN</p>
     <h3>
       Ausgangslage: Der Avatar kann mit w,a,s,d entlang der Koordinatenachsen
       bewegt, mit j/l gedreht und mit i/k vor- und rückwärts bewegt werden.
@@ -62,6 +71,8 @@
     var aspect_ratio = window.innerWidth / window.innerHeight;
 
     var camera = new THREE.PerspectiveCamera(75, aspect_ratio, 1, 10000);
+    var angle = Math.PI / 12;
+    camera.rotation.x += angle;
 
     //camera.position.z = 500
     //camera.position.set(0,0,500);
@@ -160,7 +171,7 @@
 
     // Kamera
     //camera.position.z = 500
-    camera.position.set(0, 0, 200);
+    camera.position.set(0, -20, 400);
     head.add(camera);
 
     // Bäume
@@ -224,8 +235,14 @@
     }
 
     function reset() {
-      camera.position.set(0, 0, 200);
+      camera.position.set(0, -20, 400);
       belly.position.set(0, 0, 0);
+      boxbelly.setFromObject(belly);
+      timer = clock.getElapsedTime()
+      // ballarr.length = 0
+      // boxarr.length = 0
+      // speedarr.length = 0
+      // starttimes.length = 0
       map = {};
     }
 
@@ -241,7 +258,7 @@
       await wait(20);
     }
 
-    var meter = 5;
+    var meter = 0.1;
     const g_pluto = 0.62 * meter;
     const g_mond = 1.62 * meter;
     const g_mars = 3.71 * meter;
@@ -249,14 +266,13 @@
     const g_venus = 8.87 * meter;
     const g_erde = 9.81 * meter;
     const g_neptun = 11.15 * meter;
-    var g_const = g_pluto;
+    var g_const = g_erde;
     var Hoehe = 3 * meter;
 
     const speedarr = [];
 
     async function fall() {
       const t = clock.getElapsedTime();
-      console.log(0);
 
       for (i = 0; i < ballarr.length; i++) {
         const tball = clock.getElapsedTime() - starttimes[i];
@@ -271,48 +287,107 @@
     }
     const starttimes = [];
     var lasttime = 0;
-    const startingspeed = 1;
+    const startingspeed = 0.5;
     async function generateBoxes() {
-      if (clock.getElapsedTime() < lasttime + 2) {
+      const timer = 1
+      if (clock.getElapsedTime() < lasttime + timer) {
         return;
       }
-      lasttime += 2;
-      const shape = new THREE.BoxGeometry(100, 100, 100);
-      const cover = new THREE.MeshNormalMaterial();
+      lasttime += timer;
+      for (let i = 0; i < 1; i++) {
+        const shape = new THREE.BoxGeometry(100, 100, 100);
+        const cover = new THREE.MeshNormalMaterial();
 
-      // Random position within a range
-      const posX = Math.random() * 200; // Adjust the range as needed
-      const posY = Math.random() * 200 + 500; // Adjust the range as needed
-      const posZ = Math.random() * 200 - 400 + belly.position.z; // Adjust the range as needed
+        // Random position within a range
+        const posX = Math.random() * 400 - 200 + belly.position.x; // Adjust the range as needed
+        const posY = Math.random() * 200 + 300; // Adjust the range as needed
+        const posZ = Math.random() * 200 - 650 + belly.position.z; // Adjust the range as needed
 
-      const ball = new THREE.Mesh(shape, cover);
-      const box = new THREE.Box3().setFromObject(ball);
+        const ball = new THREE.Mesh(shape, cover);
+        const box = new THREE.Box3().setFromObject(ball);
 
-      ball.position.set(posX, posY, posZ);
-      scene.add(ball);
-      speedarr.push(startingspeed);
-      starttimes.push(clock.getElapsedTime());
-      ballarr.push(ball);
-      boxarr.push(box);
+        ball.position.set(posX, posY, posZ);
+        scene.add(ball);
+        speedarr.push(startingspeed);
+        starttimes.push(clock.getElapsedTime());
+        ballarr.push(ball);
+        boxarr.push(box);
+      }
     }
 
     async function clearground() {
       for (let i = 0; i < ballarr.length; i++) {
-        if (ballarr[i].position.y == -11111) {
+        if (ballarr[i].position.y < 0) {
           scene.remove(ballarr[i]);
           speedarr.splice(i, 1);
+          boxarr.splice(i, 1);
           starttimes.splice(i, 1);
           ballarr.splice(i, 1); // Entfernt das Element aus dem Array
+          console.log("Remove")
           i--; // Reduziert i, um das übersprungene Element zu berücksichtigen
         }
       }
     }
+
+
+
+    function win() {
+      parentagain.appendChild(buttonagain)
+      parentwin.appendChild(pwin)
+      end = true
+    }
+
+    function again() {
+      reset()
+      console.log("pressed")
+      parentagain.removeChild(buttonagain)
+      parentwin.removeChild(pwin)
+      gameLoop()
+    }
+
+
+    const goalshape = new THREE.BoxGeometry(800, 400, 400);
+    const goalcover = new THREE.MeshNormalMaterial();
+    const goal = new THREE.Mesh(goalshape, goalcover);
+    goal.position.set(0, 100, -4000);
+    const goalbox = new THREE.Box3().setFromObject(goal);
+    scene.add(goal);
+    
+    let timer = 0;
+    const zeit = 10
+    const p = document.getElementById('zeit')
+    async function positionCheck() {
+      
+      if (belly.position.x > 400 || belly.position.x < -400) {
+        reset()
+        return 
+      }
+      if (timer + zeit < clock.getElapsedTime()) {
+        reset()
+        return
+      }
+      if (boxbelly.intersectsBox(goalbox)) {
+        win()
+      }
+      p.innerText = Math.ceil(timer - clock.getElapsedTime() + zeit);
+    }
+
+    const buttonagain = document.getElementById('again')
+    const parentagain = buttonagain.parentNode
+    parentagain.removeChild(buttonagain)
+    const pwin = document.getElementById('gewonnen')
+    const parentwin = pwin.parentNode
+    parentwin.removeChild(pwin)
     var end = false;
     async function gameLoop() {
+      lasttime = 0
+      timer = 0
       clock.start();
+      end = false
       while (true) {
         await generateBoxes();
         await pressed();
+        await positionCheck();
         detectCollisions();
         fall();
         await clearground();
@@ -323,12 +398,10 @@
       //alert("Eingabe: " + code);
       //if (code == 65) belly.position.x = belly.position.x - step;
       var tmpVec = new THREE.Vector3();
-      if (map[65]) belly.position.x -= step;
-      if (map[87]) belly.position.y += step;
-      if (map[83]) belly.position.y -= step;
-      if (map[68]) belly.position.x += step;
-      if (map[74]) belly.rotateY(rotstep);
-      if (map[76]) belly.rotateY(-rotstep);
+      if (map[74]) belly.position.x -= step; // 65
+      if (map[76]) belly.position.x += step; // 68
+      // if (map[74]) belly.rotateY(rotstep);
+      // if (map[76]) belly.rotateY(-rotstep);
       if (map[73]) {
         belly.getWorldDirection(tmpVec);
         belly.position.add(tmpVec.multiplyScalar(-step * 1.5));
