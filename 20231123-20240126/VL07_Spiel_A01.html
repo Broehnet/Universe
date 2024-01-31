@@ -2,25 +2,56 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Siebente Vorlesung: Ein kleines Spiel...</title>
+    <title>Falling Universe</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Honk&display=swap"
+      rel="stylesheet"
+    />
     <script src="three.min.js"></script>
   </head>
 
-  <body>
+  <body style="background-color: black; font-family: Honk">
+    <h3
+      id="title"
+      style="
+        color: red;
+        position: absolute;
+        z-index: 99;
+        left: 46%;
+        top: 25%;
+        font-size: 40px;
+      "
+    >
+      Falling Universe
+    </h3>
+    <h3
+      id="planet"
+      style="
+        color: red;
+        position: absolute;
+        z-index: 99;
+        left: 49%;
+        top: 25%;
+        font-size: 20px;
+      "
+    ></h3>
     <button
       onclick="onStart()"
       type="button"
       id="start"
       style="
         position: absolute;
-        display: block;
         z-index: 99;
         left: 50%;
         top: 50%;
+        display: block;
         height: 90px;
         width: 120px;
-        background-color: aqua;
+        background-color: red;
         border-style: hidden;
+        font-family: Honk;
       "
     >
       Spiel starten!
@@ -37,36 +68,67 @@
         top: 20%;
         height: 90px;
         width: 120px;
-        background-color: aqua;
+        background-color: red;
         border-style: hidden;
+        font-family: Honk;
       "
     >
       Erneut spielen
     </button>
-    <p id="zeit" style="z-index: 99;
-      position: absolute;
-        left: 30%;
-        top: 30%;"></p>
-    <p id="gewonnen" style="z-index: 99;
-    position: absolute;
-      left: 50%;
-      font-size: 30px;
-      top: 30%;">GEWONNEN</p>
-    <h3>
-      Ausgangslage: Der Avatar kann mit w,a,s,d entlang der Koordinatenachsen
-      bewegt, mit j/l gedreht und mit i/k vor- und rückwärts bewegt werden.
-    </h3>
+    <p
+      id="zeit"
+      style="z-index: 99; position: absolute; left: 30%; top: 30%"
+    ></p>
+    <p
+      id="gewonnen"
+      style="
+        z-index: 99;
+        position: absolute;
+        left: 50%;
+        font-size: 30px;
+        top: 30%;
+      "
+    >
+      GEWONNEN
+    </p>
 
     <div id="myCanvas"></div>
   </body>
 
   <script>
     // Hier ist die Szenerie, in der sich alles abspielt:
+    const textureLoader = new THREE.TextureLoader();
+    const baumstamm = textureLoader.load('/baumrinde.jpg');
+    const leaf = textureLoader.load('/leaf.jpg');
+    const mond = textureLoader.load('/mond.jpg');
+    const mars = textureLoader.load('/mars.jpg');
+    const erde = textureLoader.load('/erde.jpg');
+    const venus = textureLoader.load('/venus.jpg');
+    const pluto = textureLoader.load('/pluto.jpg');
+    const neptun = textureLoader.load('/neptun.jpg');
+    const goaltexture = new THREE.MeshBasicMaterial({
+      map: textureLoader.load('/goal.jpg'),
+    });
+
+    var materials = [
+      new THREE.MeshBasicMaterial({ map: pluto }),
+      new THREE.MeshBasicMaterial({ map: mond }),
+      new THREE.MeshBasicMaterial({ map: mars }),
+      new THREE.MeshBasicMaterial({ map: venus }),
+      new THREE.MeshBasicMaterial({ map: erde }),
+      new THREE.MeshBasicMaterial({ map: neptun }),
+    ];
 
     var scene = new THREE.Scene();
+    const groundBox = new THREE.BoxGeometry(100000, 0, 100000);
+    const ground = new THREE.Mesh(groundBox, new THREE.MeshBasicMaterial());
+    ground.position.set(0, -200, 0);
+    scene.add(ground);
 
-    scene.background = new THREE.Color(0x58d1d5);
-
+    scene.background = new THREE.Color(0x000000);
+    const chrom = new THREE.MeshBasicMaterial({
+      map: textureLoader.load('/chrom.jpg'),
+    });
     // Hier steht die Kamera:
     var aspect_ratio = window.innerWidth / window.innerHeight;
 
@@ -74,20 +136,10 @@
     var angle = Math.PI / 12;
     camera.rotation.x += angle;
 
-    //camera.position.z = 500
-    //camera.position.set(0,0,500);
-    //scene.add(camera);
-
-    // Hier ist der Stift, der in die Szenerie malt:
     var renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
-    //renderer.setClearColorHex( 0xffffff, 1 );
-    //renderer.setClearColor( 0x000000, 0 );
-    document.getElementById('myCanvas').appendChild(renderer.domElement);
 
-    // ******** Ab hier geben wir unser Projekt ein ********
-    //  Threejs Dokumentation zu 3D Objekten:
-    //	https://threejs.org/docs/#api/en/core/Object3D
+    document.getElementById('myCanvas').appendChild(renderer.domElement);
 
     const zAxis = new THREE.Vector3(0, 0, 1);
     const yAxis = new THREE.Vector3(0, 1, 0);
@@ -108,90 +160,46 @@
     var shapeBelly = new THREE.SphereGeometry(bellySize, 20, 15);
     var shapeHands = new THREE.SphereGeometry(handSize, 20, 15);
     var shapeFeet = new THREE.SphereGeometry(footSize, 20, 15);
-    // 2. Argument: Anzahl Segmente um den Äquator der Kugel herum;
-    // 3. Argument: Anzahl Segmente vom Süd- zum Nordpol der Kugel;
-    var cover = new THREE.MeshNormalMaterial();
 
-    // Bauch
-    var belly = new THREE.Mesh(shapeBelly, cover);
+    var belly = new THREE.Mesh(shapeBelly, chrom);
     const boxbelly = new THREE.Box3().setFromObject(belly);
     belly.position.set(0, 0, 0);
     scene.add(belly);
 
     // Kopf
-    var head = new THREE.Mesh(shapeHead, cover);
-    head.position.set(0, bellySize + headSize, 0);
+    var head = new THREE.Mesh(shapeHead, chrom);
+    head.position.set(0, bellySize + headSize - 10, 0);
     belly.add(head);
 
     // Hände
-    var hand1 = new THREE.Mesh(shapeHands, cover);
+    var hand1 = new THREE.Mesh(shapeHands, chrom);
 
-    // Erzeuge den Vektor mit der richtigen Länge auf der x-Achse
-    // https://threejs.org/docs/#api/en/math/Vector3
-    var h1pos = new THREE.Vector3(bellySize + handSize, 0, 0);
-    // Drehe den Vektor auf die richtige Position
+    var h1pos = new THREE.Vector3(bellySize + handSize - 4, 0, 0);
 
     h1pos.applyAxisAngle(zAxis, ((2 * Math.PI) / 360) * (180 - handAngle));
     hand1.position.copy(h1pos);
 
     belly.add(hand1);
 
-    var hand2 = new THREE.Mesh(shapeHands, cover);
-    var h2pos = new THREE.Vector3(bellySize + handSize, 0, 0);
+    var hand2 = new THREE.Mesh(shapeHands, chrom);
+    var h2pos = new THREE.Vector3(bellySize + handSize - 4, 0, 0);
     var rotMat2 = new THREE.Matrix3();
     rotMat2.makeRotation(((2 * Math.PI) / 360) * handAngle);
     h2pos.applyMatrix3(rotMat2);
     hand2.position.copy(h2pos);
     belly.add(hand2);
 
-    //Fuesse
-    var foot1 = new THREE.Mesh(shapeFeet, cover);
-    var f1pos = new THREE.Vector3(bellySize + footSize, 0, 0);
-    // Matrix erzeugen
-    var rotMatF1 = new THREE.Matrix3();
-    // Eine Drehmatrix bauen, wie in der TheorieVL
-    rotMatF1.makeRotation(((2 * Math.PI) / 360) * (180 - footAngle));
-    // Vektor mit der Drehmatrix multiplizieren
-    f1pos.applyMatrix3(rotMatF1);
-    // Vektor in die neue Position kopieren
-    foot1.position.copy(f1pos);
-    belly.add(foot1);
-
-    var foot2 = new THREE.Mesh(shapeFeet, cover);
-    var f2pos = new THREE.Vector3(bellySize + footSize, 0, 0);
-    // Matrix erzeugen
-    var rotMatF2 = new THREE.Matrix3();
-    // Eine Drehmatrix bauen, wie in der TheorieVL
-    rotMatF2.makeRotation(((2 * Math.PI) / 360) * (360 + footAngle));
-    // Vektor mit der Drehmatrix multiplizieren
-    f2pos.applyMatrix3(rotMatF2);
-    // Vektor in die neue Position kopieren
-    foot2.position.copy(f2pos);
-    belly.add(foot2);
-
-    // Kamera
-    //camera.position.z = 500
     camera.position.set(0, -20, 400);
     head.add(camera);
 
     // Bäume
-    const treeNum = 100;
+    const treeNum = 200;
     var trees = new Array(treeNum);
 
-    // Allee
     for (let i = 0; i < treeNum; i += 2) {
       trees[i] = makeTreeAt(500, -100 * i);
       trees[i + 1] = makeTreeAt(-500, -100 * i);
     }
-
-    /*
-      // Zufällig
-      for (let i = 0; i < treeNum; i+=2)
-      {
-      	trees[i] = makeTreeAt(Math.random() * 2500,-Math.random() * 2500);
-      	trees[i + 1] = makeTreeAt(-Math.random() * 2500,-Math.random() * 2500);
-      }
-      */
 
     for (let i = 0; i < treeNum; i++) {
       scene.add(trees[i]);
@@ -203,10 +211,13 @@
     }
     const buttonStart = document.getElementById('start');
     const parentButtonStart = buttonStart.parentNode;
+    const title = document.getElementById('title');
+    const parentTitle = title.parentNode;
 
     function onStart() {
       renderer.render(scene, camera);
       parentButtonStart.removeChild(buttonStart);
+      parentTitle.removeChild(title);
       gameLoop();
     }
 
@@ -216,18 +227,16 @@
     function onEnd() {
       end = true;
       parentButtonStart.appendChild(buttonStart);
-      parentCanvas.removeChild(canvas); // TODO
+      parentCanvas.removeChild(canvas);
     }
 
-    var map = {};
+    var keymap = {};
     onkeydown = onkeyup = function (e) {
       e = e || event; // to deal with IE
-      map[e.keyCode] = e.type == 'keydown';
-      /* insert conditional here */
+      keymap[e.keyCode] = e.type == 'keydown';
     };
 
     const clock = new THREE.Clock();
-    //var rotstep = (4 * 2 * Math.PI) / 360;
 
     var bool = false;
     function wait(ms) {
@@ -238,17 +247,13 @@
       camera.position.set(0, -20, 400);
       belly.position.set(0, 0, 0);
       boxbelly.setFromObject(belly);
-      timer = clock.getElapsedTime()
-      // ballarr.length = 0
-      // boxarr.length = 0
-      // speedarr.length = 0
-      // starttimes.length = 0
-      map = {};
+      timer = clock.getElapsedTime();
+      keymap = {};
     }
 
     const boxarr = [];
     const ballarr = [];
-
+    const planettext = document.getElementById('planet');
     async function detectCollisions() {
       for (i = 0; i < boxarr.length; i++) {
         if (boxbelly.intersectsBox(boxarr[i])) {
@@ -262,12 +267,12 @@
     const g_pluto = 0.62 * meter;
     const g_mond = 1.62 * meter;
     const g_mars = 3.71 * meter;
-    const g_ausgedacht = 6.12 * meter;
     const g_venus = 8.87 * meter;
     const g_erde = 9.81 * meter;
     const g_neptun = 11.15 * meter;
-    var g_const = g_erde;
     var Hoehe = 3 * meter;
+    const gconstarr = [g_pluto, g_mond, g_mars, g_venus, g_erde, g_neptun];
+    const gconstarrNames = ['Pluto', 'Mond', 'Mars', 'Venus', 'Erde', 'Neptun'];
 
     const speedarr = [];
 
@@ -278,9 +283,7 @@
         const tball = clock.getElapsedTime() - starttimes[i];
         speedarr[i] = speedarr[i] + g_const * tball;
         ballarr[i].position.y = ballarr[i].position.y - speedarr[i] * tball;
-        console.log(ballarr[i].position.y);
         boxarr[i].setFromObject(ballarr[i]);
-        //if (counter % 2 == 0) renderer.render(scene, camera);
         renderer.render(scene, camera);
         boxbelly.setFromObject(belly);
       }
@@ -289,14 +292,14 @@
     var lasttime = 0;
     const startingspeed = 0.5;
     async function generateBoxes() {
-      const timer = 1
+      const timer = 1;
       if (clock.getElapsedTime() < lasttime + timer) {
         return;
       }
       lasttime += timer;
       for (let i = 0; i < 1; i++) {
         const shape = new THREE.BoxGeometry(100, 100, 100);
-        const cover = new THREE.MeshNormalMaterial();
+        const cover = currentmaterial;
 
         // Random position within a range
         const posX = Math.random() * 400 - 200 + belly.position.x; // Adjust the range as needed
@@ -323,67 +326,68 @@
           boxarr.splice(i, 1);
           starttimes.splice(i, 1);
           ballarr.splice(i, 1); // Entfernt das Element aus dem Array
-          console.log("Remove")
           i--; // Reduziert i, um das übersprungene Element zu berücksichtigen
         }
       }
     }
 
-
-
     function win() {
-      parentagain.appendChild(buttonagain)
-      parentwin.appendChild(pwin)
-      end = true
+      parentagain.appendChild(buttonagain);
+      parentwin.appendChild(pwin);
+      end = true;
     }
 
     function again() {
-      reset()
-      console.log("pressed")
-      parentagain.removeChild(buttonagain)
-      parentwin.removeChild(pwin)
-      gameLoop()
+      reset();
+      parentagain.removeChild(buttonagain);
+      parentwin.removeChild(pwin);
+      gameLoop();
     }
 
-
     const goalshape = new THREE.BoxGeometry(800, 400, 400);
-    const goalcover = new THREE.MeshNormalMaterial();
-    const goal = new THREE.Mesh(goalshape, goalcover);
-    goal.position.set(0, 100, -4000);
+    const goalcover = new THREE.MeshBasicMaterial({ color: 0x098233 });
+    const goal = new THREE.Mesh(goalshape, goaltexture);
+    goal.position.set(0, 100, -12000);
     const goalbox = new THREE.Box3().setFromObject(goal);
     scene.add(goal);
-    
+
     let timer = 0;
-    const zeit = 10
-    const p = document.getElementById('zeit')
+    const zeit = 30;
+    const p = document.getElementById('zeit');
     async function positionCheck() {
-      
       if (belly.position.x > 400 || belly.position.x < -400) {
-        reset()
-        return 
+        reset();
+        return;
       }
       if (timer + zeit < clock.getElapsedTime()) {
-        reset()
-        return
+        reset();
+        return;
       }
       if (boxbelly.intersectsBox(goalbox)) {
-        win()
+        win();
       }
       p.innerText = Math.ceil(timer - clock.getElapsedTime() + zeit);
     }
 
-    const buttonagain = document.getElementById('again')
-    const parentagain = buttonagain.parentNode
-    parentagain.removeChild(buttonagain)
-    const pwin = document.getElementById('gewonnen')
-    const parentwin = pwin.parentNode
-    parentwin.removeChild(pwin)
+    const buttonagain = document.getElementById('again');
+    const parentagain = buttonagain.parentNode;
+    parentagain.removeChild(buttonagain);
+    const pwin = document.getElementById('gewonnen');
+    const parentwin = pwin.parentNode;
+    parentwin.removeChild(pwin);
     var end = false;
+    let currentmaterial = materials[0];
+
     async function gameLoop() {
-      lasttime = 0
-      timer = 0
+      const index = Math.floor(Math.random() * gconstarr.length);
+      g_const = gconstarr[index];
+      planettext.innerText = gconstarrNames[index];
+      currentmaterial = materials[index];
+      ground.material = currentmaterial;
+      lasttime = 0;
+      timer = 0;
       clock.start();
-      end = false
+      end = false;
       while (true) {
         await generateBoxes();
         await pressed();
@@ -395,25 +399,16 @@
       }
     }
     async function pressed() {
-      //alert("Eingabe: " + code);
-      //if (code == 65) belly.position.x = belly.position.x - step;
       var tmpVec = new THREE.Vector3();
-      if (map[74]) belly.position.x -= step; // 65
-      if (map[76]) belly.position.x += step; // 68
-      // if (map[74]) belly.rotateY(rotstep);
-      // if (map[76]) belly.rotateY(-rotstep);
-      if (map[73]) {
+      if (keymap[65]) belly.position.x -= step; // 65
+      if (keymap[68]) belly.position.x += step; // 68
+      if (keymap[87]) {
         belly.getWorldDirection(tmpVec);
         belly.position.add(tmpVec.multiplyScalar(-step * 1.5));
       }
-      if (map[75]) {
+      if (keymap[83]) {
         belly.getWorldDirection(tmpVec);
         belly.position.add(tmpVec.multiplyScalar(step * 1.5));
-      }
-      if (map[82]) {
-        belly.position.set(0, 0, 0);
-        belly.rotation.set(0, 0, 0);
-        //belly.setRotationFromAxisAngle(yAxis,0);
       }
       boxbelly.setFromObject(belly);
       renderer.render(scene, camera);
@@ -421,17 +416,19 @@
     }
 
     function makeTreeAt(x, z) {
-      var colorArr = [0xffffff, 0xfa8791, 0xfefa12];
+      var colorArr = [0xffff9f, 0xfa8791, 0xfefa12];
       var currentcolor = colorArr[Math.floor(Math.random() * 3)];
       var trunkBase = -75;
       var topPosition = 175;
       var trunk = new THREE.Mesh(
         new THREE.CylinderGeometry(50, 50, 200),
-        new THREE.MeshBasicMaterial({ color: 'sienna' })
+        new THREE.MeshBasicMaterial({
+          map: baumstamm,
+        })
       );
       var top = new THREE.Mesh(
         new THREE.SphereGeometry(150),
-        new THREE.MeshBasicMaterial({ color: currentcolor })
+        new THREE.MeshBasicMaterial({ map: leaf })
       );
       top.position.y = topPosition;
       trunk.add(top);
